@@ -386,6 +386,40 @@
             opacity: 1;
         }
 
+        /* Music Overlay for Mobile */
+        .music-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        .music-overlay.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .music-overlay-btn {
+            padding: 20px 40px;
+            font-size: 1.3rem;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 4px 20px rgba(255, 107, 157, 0.6);
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
         .note {
             font-size: 1.5rem;
             color: var(--primary);
@@ -535,6 +569,13 @@
         <button class="music-btn" id="musicBtn" title="Play/Pause Music">🎵</button>
     </div>
     
+    <!-- Click to Play Overlay for Mobile -->
+    <div class="music-overlay" id="musicOverlay">
+        <button class="music-overlay-btn" id="musicOverlayBtn">
+            🎵 Klik untuk memutar musik
+        </button>
+    </div>
+    
     <div class="music-notes" id="musicNotes">
         <span class="note">♪</span>
         <span class="note">♫</span>
@@ -585,7 +626,7 @@
 
         <!-- Wishes Section -->
         <div class="wishes-section">
-            <p class="wishes-text">wishes dan yappingnyaaa ada semuanya yaaa,</p>
+            <p class="wishes-text">wishes dan yappingnyaaa ada dimana yaaa,</p>
             <p class="wishes-text" style="margin-bottom: 20px;">kilik sini heheh 😄</p>
             <a href="https://www.canva.com/design/DAG_cRISyOM/9U4nFlaMyNQU3Mo6exLFqA/edit?utm_content=DAG_cRISyOM&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton" 
                target="_blank" 
@@ -638,12 +679,19 @@
         }
 
         function onPlayerReady(event) {
-            // Player is ready - autoplay is set, music will play automatically
-            console.log('YouTube player ready - autoplaying music');
-            isPlaying = true;
-            musicBtn.textContent = '⏸️';
-            musicBtn.classList.add('playing');
-            musicNotes.classList.add('visible');
+            // Player is ready - try to autoplay
+            player.unMute();
+            player.playVideo().then(() => {
+                // Autoplay worked - hide overlay and show playing state
+                isPlaying = true;
+                musicBtn.textContent = '⏸️';
+                musicBtn.classList.add('playing');
+                musicNotes.classList.add('visible');
+                musicOverlay.classList.remove('visible');
+            }).catch(() => {
+                // Autoplay blocked - keep overlay visible
+                console.log('Autoplay blocked - user needs to click');
+            });
         }
 
         function onPlayerStateChange(event) {
@@ -695,6 +743,27 @@
         // Music control
         const musicBtn = document.getElementById('musicBtn');
         const musicNotes = document.getElementById('musicNotes');
+        const musicOverlay = document.getElementById('musicOverlay');
+        const musicOverlayBtn = document.getElementById('musicOverlayBtn');
+
+        // Show overlay on page load (for mobile)
+        musicOverlay.classList.add('visible');
+
+        // Handle overlay button click
+        musicOverlayBtn.addEventListener('click', () => {
+            if (player && player.playVideo) {
+                player.unMute();
+                player.playVideo().then(() => {
+                    isPlaying = true;
+                    musicBtn.textContent = '⏸️';
+                    musicBtn.classList.add('playing');
+                    musicNotes.classList.add('visible');
+                    musicOverlay.classList.remove('visible');
+                }).catch(error => {
+                    console.log('Play failed:', error);
+                });
+            }
+        });
 
         musicBtn.addEventListener('click', () => {
             if (!player || !player.playVideo) {
